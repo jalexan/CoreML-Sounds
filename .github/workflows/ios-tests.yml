@@ -5,6 +5,7 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:         # adds a manual "Run workflow" button in the Actions tab
 
 # Cancel an in-flight run when a newer commit is pushed to the same ref.
 concurrency:
@@ -13,15 +14,25 @@ concurrency:
 
 jobs:
   test:
-    runs-on: macos-15          # free macOS runner; needs Xcode >= 26 (see note below)
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
-      # The project uses pbxproj objectVersion 90 + Swift settings that require
-      # Xcode 26 or newer. If the default toolchain is older, select a newer one, e.g.:
-       sudo xcode-select -s /Applications/Xcode_26.app
-      - name: Show toolchain
-        run: xcodebuild -version
+      # This project uses pbxproj objectVersion 90 and Swift settings that require
+      # Xcode >= 26. Select the newest Xcode installed on the runner, then fail
+      # early with a clear message if it is still too old.
+      - name: Select newest Xcode
+        run: |
+          set -euo pipefail
+          XCODE_APP="$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+          echo "Selecting $XCODE_APP"
+          sudo xcode-select -s "$XCODE_APP/Contents/Developer"
+          xcodebuild -version
+          MAJOR="$(xcodebuild -version | awk 'NR==1 {print $2}' | cut -d. -f1)"
+          if [ "$MAJOR" -lt 26 ]; then
+            echo "::error::This project needs Xcode >= 26, but the runner's newest is Xcode $MAJOR. Use a newer runner image (e.g. macos-26) or install Xcode 26+."
+            exit 1
+          fi
 
       - name: Run unit tests
         run: |
