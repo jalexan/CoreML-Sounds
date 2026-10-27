@@ -1,0 +1,41 @@
+name: iOS Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+# Cancel an in-flight run when a newer commit is pushed to the same ref.
+concurrency:
+  group: ios-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: macos-15          # free macOS runner; needs Xcode >= 26 (see note below)
+    steps:
+      - uses: actions/checkout@v4
+
+      # The project uses pbxproj objectVersion 90 + Swift settings that require
+      # Xcode 26 or newer. If the default toolchain is older, select a newer one, e.g.:
+      #   sudo xcode-select -s /Applications/Xcode_26.app
+      - name: Show toolchain
+        run: xcodebuild -version
+
+      - name: Run unit tests
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project CoreML-Sounds.xcodeproj \
+            -scheme CoreML-Sounds \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -resultBundlePath TestResults.xcresult \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload test results
+        if: always()           # keep the .xcresult even when tests fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults
+          path: TestResults.xcresult
