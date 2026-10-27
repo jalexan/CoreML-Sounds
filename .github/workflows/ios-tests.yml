@@ -19,7 +19,7 @@ jobs:
 
       # The project uses pbxproj objectVersion 90 + Swift settings that require
       # Xcode 26 or newer. If the default toolchain is older, select a newer one, e.g.:
-      #   sudo xcode-select -s /Applications/Xcode_26.app
+       sudo xcode-select -s /Applications/Xcode_26.app
       - name: Show toolchain
         run: xcodebuild -version
 
