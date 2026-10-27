@@ -1,1 +1,5 @@
 CLAUDE.md
+
+# Xcode / CI build output
+DerivedData/
+TestResults.xcresult/

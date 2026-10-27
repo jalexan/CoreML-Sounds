@@ -18,6 +18,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Reuse compiled output between runs so the build step mostly skips recompiling.
+      # The key rolls over when sources or the project file change; restore-keys lets a
+      # changed run start from the most recent prior cache and rebuild incrementally.
+      - name: Cache DerivedData
+        uses: actions/cache@v4
+        with:
+          path: DerivedData
+          key: deriveddata-${{ runner.os }}-${{ hashFiles('**/*.swift', '**/project.pbxproj') }}
+          restore-keys: |
+            deriveddata-${{ runner.os }}-
+
       # This project uses pbxproj objectVersion 90 and Swift settings that require
       # Xcode >= 26. Select the newest Xcode installed on the runner, then fail
       # early with a clear message if it is still too old.
@@ -41,6 +52,7 @@ jobs:
             -project CoreML-Sounds.xcodeproj \
             -scheme CoreML-Sounds \
             -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            -derivedDataPath DerivedData \
             -resultBundlePath TestResults.xcresult \
             CODE_SIGNING_ALLOWED=NO
 
